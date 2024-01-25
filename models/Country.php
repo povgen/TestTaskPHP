@@ -11,8 +11,8 @@ class Country
 		return DB::run('
 			SELECT Continent,
 			       Region,
-			       count(*)                          				AS contries,
-			       coalesce(AVG(LifeExpectancy), \'\') 				AS LifeDurartion,
+			       COUNT(*)                          				AS contries,
+			       COALESCE(AVG(LifeExpectancy), \'\') 				AS LifeDurartion,
 			       SUM(Population)                   				AS Population,
 			       SUM(sq.cities)                    				AS cities,
 			       SUM(sq.langs)                     				AS langs
