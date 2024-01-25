@@ -8,34 +8,39 @@ class Country
 {
 	public static function getStatistics()
 	{
-		return DB::run('
-			SELECT Continent,
-			       Region,
-			       COUNT(*)                          				AS contries,
-			       COALESCE(AVG(LifeExpectancy), \'\') 				AS LifeDurartion,
-			       SUM(Population)                   				AS Population,
-			       SUM(sq.cities)                    				AS cities,
-			       SUM(sq.langs)                     				AS langs
-			  FROM (SELECT Continent,
-			               Region,
-			               LifeExpectancy,
-			               Population,
-			               (SELECT COUNT(*)
-			                  FROM CountryLanguage
-			                 WHERE CountryCode = Country.Code
-			               )                           				AS langs,
-			               (SELECT COUNT(*) 
-			                  FROM City 
-			                 WHERE CountryCode = Country.Code
-			               ) 										AS cities
-			          FROM Country) as sq
-		  GROUP BY sq.Continent, 
-		           sq.Region
-		  
-		  ORDER BY sq.Continent, 
-		           sq.Region;
-			
-			
-		')->fetchAll(\PDO::FETCH_ASSOC);
+		$sql = /** @lang SQL */
+			'WITH sq AS (
+				SELECT Continent,
+					   Region,
+					   COUNT(*)				AS countries,
+					   AVG(LifeExpectancy)	AS life_duration,
+					   SUM(Population)		AS population
+				  FROM Country
+			  GROUP BY Continent,
+					   Region
+			)
+			SELECT Country.Continent,
+				   Country.Region,
+				   countries,
+				   COALESCE(FORMAT(sq.life_duration, 2), \'нет данных\')	AS life_duration,
+				   sq.population,
+				   COUNT(distinct City.ID)								AS cities,
+				   COUNT(distinct langs.CountryCode, langs.Language)		AS langs
+			  FROM Country
+				   LEFT JOIN City 
+				   ON City.CountryCode = Country.Code
+
+				   LEFT JOIN CountryLanguage AS langs 
+				   ON Country.Code = langs.CountryCode
+
+				   LEFT JOIN sq 
+				   ON sq.Continent = Country.Continent 
+					   AND sq.Region = Country.Region
+
+		  GROUP BY Continent,
+				   Region
+		';
+
+		return DB::run($sql)->fetchAll(\PDO::FETCH_ASSOC);
 	}
 }
